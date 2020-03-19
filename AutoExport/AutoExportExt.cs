@@ -5,8 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Security;
 using System.Text;
-using KeePassLib.Keys;
-using KeePassLib.Security;
 
 namespace AutoExport
 {
@@ -16,7 +14,6 @@ namespace AutoExport
         private const string PasswordKeyName = "Password";
         private const string UrlKeyName = "URL";
         private const string KeePassDatabaseExtension = ".kdbx";
-
 
         private readonly object _locker = new object();
         private readonly ISet<string> _entries = new HashSet<string>();
@@ -56,7 +53,7 @@ namespace AutoExport
                 fileSavingEventArgs.Database.RootGroup.FindEntriesByTag(Tag, entries, true);
                 foreach (KeePassLib.PwEntry entry in entries)
                 {
-                    ProtectedString urlValue = entry.Strings.GetSafe(UrlKeyName);
+                    KeePassLib.Security.ProtectedString urlValue = entry.Strings.GetSafe(UrlKeyName);
                     if (urlValue.IsEmpty || !Uri.IsWellFormedUriString(urlValue.ReadString(), UriKind.Absolute))
                         continue;
 
@@ -83,7 +80,7 @@ namespace AutoExport
             if (!ReferenceEquals(argumentError, null))
                 throw argumentError;
 
-            //Create new databse in temporary file
+            //Create new database in temporary file
             KeePassLib.PwDatabase exportedDatabase = new KeePassLib.PwDatabase();
             exportedDatabase.Compression = KeePassLib.PwCompressionAlgorithm.GZip;
             KeePassLib.Serialization.IOConnectionInfo connectionInfo = new KeePassLib.Serialization.IOConnectionInfo();
@@ -91,7 +88,7 @@ namespace AutoExport
             string tmpPath = Path.Combine(storageDirectory, string.Format("{0}{1}", Guid.NewGuid(), KeePassDatabaseExtension));
             connectionInfo.Path = tmpPath;
             connectionInfo.CredSaveMode = KeePassLib.Serialization.IOCredSaveMode.SaveCred;
-            CompositeKey exportedKey = new KeePassLib.Keys.CompositeKey();
+            KeePassLib.Keys.CompositeKey exportedKey = new KeePassLib.Keys.CompositeKey();
             exportedKey.AddUserKey(new KeePassLib.Keys.KcpPassword(password.ReadString()));
             exportedDatabase.New(connectionInfo, exportedKey);
 
@@ -100,7 +97,7 @@ namespace AutoExport
             exportedDatabase.Save(logger);
             exportedDatabase.Close();
 
-            //Move temporaray file into target backup path
+            //Move temporary file into target backup path
             if (File.Exists(filePath.AbsolutePath))
                 File.Delete(filePath.AbsolutePath);
             File.Move(tmpPath, filePath.AbsolutePath);
