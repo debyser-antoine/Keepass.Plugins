@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Security;
 using System.Text;
+using KeePassLib.Keys;
 using KeePassLib.Security;
 
 namespace AutoExport
@@ -12,8 +13,10 @@ namespace AutoExport
     public sealed class AutoExportExt : KeePass.Plugins.Plugin
     {
         private const string Tag = "AutoExportPlugin";
-        private const string passwordKeyName = "Password";
-        private const string urlKeyName = "URL";
+        private const string PasswordKeyName = "Password";
+        private const string UrlKeyName = "URL";
+        private const string KeePassDatabaseExtension = ".kdbx";
+
 
         private readonly object _locker = new object();
         private readonly ISet<string> _entries = new HashSet<string>();
@@ -44,7 +47,7 @@ namespace AutoExport
 
         private void OnDatabaseSaving(object sender, KeePass.Forms.FileSavingEventArgs fileSavingEventArgs)
         {
-            if (ReferenceEquals(fileSavingEventArgs, null) || ReferenceEquals(fileSavingEventArgs.Database, null))
+            if (ReferenceEquals(fileSavingEventArgs, null) || ReferenceEquals(fileSavingEventArgs.Database, null) || !fileSavingEventArgs.Database.IsOpen)
                 return;
 
             try
@@ -53,14 +56,14 @@ namespace AutoExport
                 fileSavingEventArgs.Database.RootGroup.FindEntriesByTag(Tag, entries, true);
                 foreach (KeePassLib.PwEntry entry in entries)
                 {
-                    ProtectedString urlValue = entry.Strings.GetSafe(urlKeyName);
+                    ProtectedString urlValue = entry.Strings.GetSafe(UrlKeyName);
                     if (urlValue.IsEmpty || !Uri.IsWellFormedUriString(urlValue.ReadString(), UriKind.Absolute))
                         continue;
 
                     Uri filePath = new Uri(urlValue.ReadString());
                     try
                     {
-                        Export(fileSavingEventArgs.Database, filePath, entry.Strings.GetSafe(passwordKeyName), _logger);
+                        Export(fileSavingEventArgs.Database, filePath, entry.Strings.GetSafe(PasswordKeyName), _logger);
                     }
                     catch (Exception ex)
                     {
@@ -80,33 +83,39 @@ namespace AutoExport
             if (!ReferenceEquals(argumentError, null))
                 throw argumentError;
 
+            //Create new databse in temporary file
             KeePassLib.PwDatabase exportedDatabase = new KeePassLib.PwDatabase();
             exportedDatabase.Compression = KeePassLib.PwCompressionAlgorithm.GZip;
-            exportedDatabase.MasterKey = new KeePassLib.Keys.CompositeKey();
-            exportedDatabase.MasterKey.AddUserKey(new KeePassLib.Keys.KcpPassword(password.ReadString()));
-
-            exportedDatabase.MergeIn(database, KeePassLib.PwMergeMethod.OverwriteExisting, logger);
-
             KeePassLib.Serialization.IOConnectionInfo connectionInfo = new KeePassLib.Serialization.IOConnectionInfo();
-            connectionInfo.Path = filePath.AbsolutePath;
+            string storageDirectory = Path.GetDirectoryName(filePath.AbsolutePath);
+            string tmpPath = Path.Combine(storageDirectory, string.Format("{0}{1}", Guid.NewGuid(), KeePassDatabaseExtension));
+            connectionInfo.Path = tmpPath;
             connectionInfo.CredSaveMode = KeePassLib.Serialization.IOCredSaveMode.SaveCred;
-            connectionInfo.Password = password.ReadString();
-            exportedDatabase.SaveAs(connectionInfo, false, logger);
+            CompositeKey exportedKey = new KeePassLib.Keys.CompositeKey();
+            exportedKey.AddUserKey(new KeePassLib.Keys.KcpPassword(password.ReadString()));
+            exportedDatabase.New(connectionInfo, exportedKey);
+
+            //Merge current database in temporary file
+            exportedDatabase.MergeIn(database, KeePassLib.PwMergeMethod.OverwriteExisting, logger);
+            exportedDatabase.Save(logger);
             exportedDatabase.Close();
+
+            //Move temporaray file into target backup path
+            if (File.Exists(filePath.AbsolutePath))
+                File.Delete(filePath.AbsolutePath);
+            File.Move(tmpPath, filePath.AbsolutePath);
         }
 
         private static Exception CheckArgument(KeePassLib.PwDatabase database, Uri filePath, KeePassLib.Security.ProtectedString password)
         {
-            const string keepassDatabaseExtension = ".kdbx";
-
             if (ReferenceEquals(database, null))
                 return new ArgumentNullException(nameof(database));
             if (ReferenceEquals(filePath, null))
                 return new ArgumentNullException(nameof(filePath));
             if (!filePath.IsFile)
                 return new ArgumentException(string.Format(CultureInfo.InvariantCulture, "Path [{0}] is not a file", filePath.AbsolutePath), nameof(filePath));
-            if (!Path.GetExtension(filePath.AbsolutePath).Equals(keepassDatabaseExtension, StringComparison.InvariantCultureIgnoreCase))
-                return new ArgumentException(string.Format(CultureInfo.InvariantCulture, "File [{0}] must be a KeePass database (*.{1})", filePath.AbsolutePath, keepassDatabaseExtension), nameof(filePath));
+            if (!Path.GetExtension(filePath.AbsolutePath).Equals(KeePassDatabaseExtension, StringComparison.InvariantCultureIgnoreCase))
+                return new ArgumentException(string.Format(CultureInfo.InvariantCulture, "File [{0}] must be a KeePass database (*.{1})", filePath.AbsolutePath, KeePassDatabaseExtension), nameof(filePath));
             if (ReferenceEquals(password, null) || password.IsEmpty)
                 return new ArgumentNullException(nameof(password));
 
