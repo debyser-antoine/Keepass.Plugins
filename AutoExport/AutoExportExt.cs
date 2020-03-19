@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Security;
 using System.Text;
+using KeePassLib.Security;
 
 namespace AutoExport
 {
@@ -12,6 +13,7 @@ namespace AutoExport
     {
         private const string Tag = "AutoExportPlugin";
         private const string passwordKeyName = "Password";
+        private const string urlKeyName = "URL";
 
         private readonly object _locker = new object();
         private readonly ISet<string> _entries = new HashSet<string>();
@@ -51,10 +53,11 @@ namespace AutoExport
                 fileSavingEventArgs.Database.RootGroup.FindEntriesByTag(Tag, entries, true);
                 foreach (KeePassLib.PwEntry entry in entries)
                 {
-                    if (string.IsNullOrEmpty(entry.OverrideUrl) || !Uri.IsWellFormedUriString(entry.OverrideUrl, UriKind.Absolute))
+                    ProtectedString urlValue = entry.Strings.GetSafe(urlKeyName);
+                    if (urlValue.IsEmpty || !Uri.IsWellFormedUriString(urlValue.ReadString(), UriKind.Absolute))
                         continue;
 
-                    Uri filePath = new Uri(entry.OverrideUrl);
+                    Uri filePath = new Uri(urlValue.ReadString());
                     try
                     {
                         Export(fileSavingEventArgs.Database, filePath, entry.Strings.GetSafe(passwordKeyName), _logger);
@@ -94,7 +97,7 @@ namespace AutoExport
 
         private static Exception CheckArgument(KeePassLib.PwDatabase database, Uri filePath, KeePassLib.Security.ProtectedString password)
         {
-            const string keepassDatabaseExtension = "kdbx";
+            const string keepassDatabaseExtension = ".kdbx";
 
             if (ReferenceEquals(database, null))
                 return new ArgumentNullException(nameof(database));
