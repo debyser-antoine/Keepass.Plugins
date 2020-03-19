@@ -109,15 +109,15 @@ namespace AutoExport
         private static Exception CheckArgument(KeePassLib.PwDatabase database, Uri filePath, KeePassLib.Security.ProtectedString password)
         {
             if (ReferenceEquals(database, null))
-                return new ArgumentNullException(nameof(database));
+                return new ArgumentNullException("database");
             if (ReferenceEquals(filePath, null))
-                return new ArgumentNullException(nameof(filePath));
+                return new ArgumentNullException("filePath");
             if (!filePath.IsFile)
-                return new ArgumentException(string.Format(CultureInfo.InvariantCulture, "Path [{0}] is not a file", filePath.AbsolutePath), nameof(filePath));
+                return new ArgumentException(string.Format(CultureInfo.InvariantCulture, "Path [{0}] is not a file", filePath.AbsolutePath), "filePath");
             if (!Path.GetExtension(filePath.AbsolutePath).Equals(KeePassDatabaseExtension, StringComparison.InvariantCultureIgnoreCase))
-                return new ArgumentException(string.Format(CultureInfo.InvariantCulture, "File [{0}] must be a KeePass database (*.{1})", filePath.AbsolutePath, KeePassDatabaseExtension), nameof(filePath));
+                return new ArgumentException(string.Format(CultureInfo.InvariantCulture, "File [{0}] must be a KeePass database (*.{1})", filePath.AbsolutePath, KeePassDatabaseExtension), "filePath");
             if (ReferenceEquals(password, null) || password.IsEmpty)
-                return new ArgumentNullException(nameof(password));
+                return new ArgumentNullException("password");
 
             return null;
         }
