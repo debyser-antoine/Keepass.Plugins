@@ -1,0 +1,5 @@
+_ReSharper.Caches
+*.plgx
+bin
+obj
+.vs

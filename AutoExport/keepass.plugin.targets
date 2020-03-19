@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <KeePassDirectory>C:\Program Files (x86)\KeePass Password Safe 2</KeePassDirectory>
+        <KeePassPath>$(KeePassDirectory)\KeePass.exe</KeePassPath>
+        <KeePassRequiredVersion>2.44</KeePassRequiredVersion>
+        <NetFrameworkRequiredVersion>4.0</NetFrameworkRequiredVersion>
+    </PropertyGroup>
+    <Target Name="BuildKeePassPGLX" AfterTargets="Build">
+        <Exec WorkingDirectory="$(MSBuildThisFileDirectory)"
+              Command="&quot;$(KeePassPath)&quot; --plgx-create &quot;$(MSBuildProjectDirectory)&quot; --plgx-prereq-kp:$(KeePassRequiredVersion) --plgx-prereq-net:$(NetFrameworkRequiredVersion)"
+              />
+    </Target>
+</Project>
