@@ -5,12 +5,14 @@ using System.IO;
 using System.Linq;
 using System.Security;
 using System.Text;
+using KeePassLib.Security;
 
 namespace AutoExport
 {
     public sealed class AutoExportExt : KeePass.Plugins.Plugin
     {
         private const string Tag = "AutoExportPlugin";
+        private const string LastExportTimeKeyName = "AutoExport_LastExportTime";
         private const string PasswordKeyName = "Password";
         private const string UrlKeyName = "URL";
         private const string KeePassDatabaseExtension = ".kdbx";
@@ -61,6 +63,7 @@ namespace AutoExport
                     try
                     {
                         Export(fileSavingEventArgs.Database, filePath, entry.Strings.GetSafe(PasswordKeyName), _logger);
+                        entry.Strings.Set(LastExportTimeKeyName, new ProtectedString(false, DateTime.UtcNow.ToString("o")));
                     }
                     catch (Exception ex)
                     {
