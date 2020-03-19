@@ -5,10 +5,16 @@
         <KeePassPath>$(KeePassDirectory)\KeePass.exe</KeePassPath>
         <KeePassRequiredVersion>2.44</KeePassRequiredVersion>
         <NetFrameworkRequiredVersion>4.0</NetFrameworkRequiredVersion>
+        <PLGXCreateCommand>&quot;$(KeePassPath)&quot; --plgx-create &quot;$(MSBuildProjectDirectory)&quot; --plgx-prereq-kp:$(KeePassRequiredVersion) --plgx-prereq-net:$(NetFrameworkRequiredVersion)</PLGXCreateCommand>
     </PropertyGroup>
-    <Target Name="BuildKeePassPGLX" AfterTargets="Build">
+    <Target Name="InfoKeePassPluginPLGX">
+        <Message Importance="High" Text="$(PLGXCreateCommand)" />
+    </Target>
+    <Target Name="BuildKeePassPluginPLGX" AfterTargets="Build" DependsOnTargets="InfoKeePassPluginPLGX">
         <Exec WorkingDirectory="$(MSBuildThisFileDirectory)"
-              Command="&quot;$(KeePassPath)&quot; --plgx-create &quot;$(MSBuildProjectDirectory)&quot; --plgx-prereq-kp:$(KeePassRequiredVersion) --plgx-prereq-net:$(NetFrameworkRequiredVersion)"
+              ConsoleToMsBuild="true"
+              Command="$(PLGXCreateCommand)"
+              Condition="'$(PLGXCreateCommand)' != ''"
               />
     </Target>
 </Project>
