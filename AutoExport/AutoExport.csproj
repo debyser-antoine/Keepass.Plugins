@@ -38,6 +38,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -47,10 +48,31 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AutoExportExt.cs" />
+    <Compile Include="CreateExport.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CreateExport.Designer.cs">
+      <DependentUpon>CreateExport.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ExportItem.cs" />
+    <Compile Include="ExportManager.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ExportManager.Designer.cs">
+      <DependentUpon>ExportManager.cs</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="keepass.plugin.targets" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="CreateExport.resx">
+      <DependentUpon>CreateExport.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ExportManager.resx">
+      <DependentUpon>ExportManager.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Security;
 using System.Text;
+using System.Windows.Forms;
 using KeePassLib.Security;
 
 namespace AutoExport
@@ -44,6 +45,44 @@ namespace AutoExport
             base.Terminate();
         }
 
+        public override ToolStripMenuItem GetMenuItem(KeePass.Plugins.PluginMenuType t)
+        {
+            // Provide a menu item for the main location(s)
+            if (t == KeePass.Plugins.PluginMenuType.Main)
+            {
+                ToolStripMenuItem tsmi = new ToolStripMenuItem();
+                tsmi.Text = "Manage Auto Export";
+                tsmi.Click += this.OnManageAutoExportClicked;
+                return tsmi;
+            }
+
+            return null; // No menu items in other locations
+        }
+
+        private void OnManageAutoExportClicked(object sender, EventArgs e)
+        {
+            if (ReferenceEquals(_host, null) || ReferenceEquals(_host.Database, null) || !_host.Database.IsOpen)
+                return;
+
+            KeePassLib.Collections.PwObjectList<KeePassLib.PwEntry> entries = new KeePassLib.Collections.PwObjectList<KeePassLib.PwEntry>();
+            _host.Database.RootGroup.FindEntriesByTag(Tag, entries, true);
+            ExportManager exportManager = new ExportManager(entries.Select(ConvertToExportItem));
+            exportManager.ShowDialog();
+        }
+
+        private ExportItem ConvertToExportItem(KeePassLib.PwEntry entry)
+        {
+            string urlValue = entry.Strings.ReadSafe(UrlKeyName);
+            string lastExportTimestampStr = entry.Strings.ReadSafe(LastExportTimeKeyName);
+            DateTime? lastExportTimestamp = null;
+            if (!string.IsNullOrEmpty(lastExportTimestampStr))
+            {
+                lastExportTimestamp = DateTime.Parse(lastExportTimestampStr);
+                lastExportTimestamp = new DateTime(lastExportTimestamp.Value.Ticks, DateTimeKind.Utc);
+            }
+            return new ExportItem(entry.Uuid.ToHexString(), new Uri(urlValue), lastExportTimestamp);
+        }
+
         private void OnDatabaseSaving(object sender, KeePass.Forms.FileSavingEventArgs fileSavingEventArgs)
         {
             if (ReferenceEquals(fileSavingEventArgs, null) || ReferenceEquals(fileSavingEventArgs.Database, null) || !fileSavingEventArgs.Database.IsOpen)
@@ -55,11 +94,11 @@ namespace AutoExport
                 fileSavingEventArgs.Database.RootGroup.FindEntriesByTag(Tag, entries, true);
                 foreach (KeePassLib.PwEntry entry in entries)
                 {
-                    KeePassLib.Security.ProtectedString urlValue = entry.Strings.GetSafe(UrlKeyName);
-                    if (urlValue.IsEmpty || !Uri.IsWellFormedUriString(urlValue.ReadString(), UriKind.Absolute))
+                    string urlValue = entry.Strings.ReadSafe(UrlKeyName);
+                    if (string.IsNullOrEmpty(urlValue) || !Uri.IsWellFormedUriString(urlValue, UriKind.Absolute))
                         continue;
 
-                    Uri filePath = new Uri(urlValue.ReadString());
+                    Uri filePath = new Uri(urlValue);
                     try
                     {
                         Export(fileSavingEventArgs.Database, filePath, entry.Strings.GetSafe(PasswordKeyName), _logger);
