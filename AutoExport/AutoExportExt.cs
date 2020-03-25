@@ -117,11 +117,13 @@ namespace AutoExport
             }
 
             if (hasDelete || hasNew) //Perform action on database
+            {
                 _host.Database.MergeIn(_host.Database, KeePassLib.PwMergeMethod.Synchronize);
 
-            //Refresh GUI
-            _host.MainWindow.UpdateUI(false, null, true, savingGroup, true, null, true);
-            _host.MainWindow.RefreshEntriesList();
+                //Refresh GUI
+                _host.MainWindow.UpdateUI(false, null, true, savingGroup, true, null, true);
+                _host.MainWindow.RefreshEntriesList();
+            }
         }
 
         private ExportItem ConvertToExportItem(KeePassLib.PwEntry entry)
@@ -170,8 +172,8 @@ namespace AutoExport
                     Uri filePath = new Uri(urlValue);
                     try
                     {
-                        Export(fileSavingEventArgs.Database, filePath, entry.Strings.GetSafe(KeePassLib.PwDefs.PasswordField), _logger);
-                        entry.Strings.Set(LastExportTimeKeyName, new KeePassLib.Security.ProtectedString(false, DateTime.UtcNow.ToString("o")));
+                        if (Export(fileSavingEventArgs.Database, filePath, entry.Strings.GetSafe(KeePassLib.PwDefs.PasswordField), _logger))
+                            entry.Strings.Set(LastExportTimeKeyName, new KeePassLib.Security.ProtectedString(false, DateTime.UtcNow.ToString("o")));
                     }
                     catch (Exception ex)
                     {
@@ -185,23 +187,27 @@ namespace AutoExport
             }
         }
 
-        private static void Export(KeePassLib.PwDatabase database, Uri filePath, KeePassLib.Security.ProtectedString password, KeePassLib.Interfaces.IStatusLogger logger)
+        private static bool Export(KeePassLib.PwDatabase database, Uri filePath, KeePassLib.Security.ProtectedString password, KeePassLib.Interfaces.IStatusLogger logger)
         {
             Exception argumentError = CheckArgument(database, filePath, password);
             if (!ReferenceEquals(argumentError, null))
                 throw argumentError;
 
+            if (string.Equals(database.IOConnectionInfo.Path, filePath.LocalPath, StringComparison.InvariantCultureIgnoreCase))
+                return false; //Don't export myself
+
             //Create new database in temporary file
             KeePassLib.PwDatabase exportedDatabase = new KeePassLib.PwDatabase();
             exportedDatabase.Compression = KeePassLib.PwCompressionAlgorithm.GZip;
             KeePassLib.Serialization.IOConnectionInfo connectionInfo = new KeePassLib.Serialization.IOConnectionInfo();
-            string storageDirectory = Path.GetDirectoryName(filePath.AbsolutePath);
+            string storageDirectory = Path.GetDirectoryName(filePath.LocalPath);
             string tmpPath = Path.Combine(storageDirectory, string.Format("{0}{1}", Guid.NewGuid(), KeePassDatabaseExtension));
             connectionInfo.Path = tmpPath;
             connectionInfo.CredSaveMode = KeePassLib.Serialization.IOCredSaveMode.SaveCred;
             KeePassLib.Keys.CompositeKey exportedKey = new KeePassLib.Keys.CompositeKey();
             exportedKey.AddUserKey(new KeePassLib.Keys.KcpPassword(password.ReadString()));
             exportedDatabase.New(connectionInfo, exportedKey);
+            exportedDatabase.RootGroup.Name = database.RootGroup.Name;
 
             //Merge current database in temporary file
             exportedDatabase.MergeIn(database, KeePassLib.PwMergeMethod.OverwriteExisting, logger);
@@ -209,9 +215,11 @@ namespace AutoExport
             exportedDatabase.Close();
 
             //Move temporary file into target backup path
-            if (File.Exists(filePath.AbsolutePath))
-                File.Delete(filePath.AbsolutePath);
-            File.Move(tmpPath, filePath.AbsolutePath);
+            if (File.Exists(filePath.LocalPath))
+                File.Delete(filePath.LocalPath);
+            File.Move(tmpPath, filePath.LocalPath);
+
+            return true;
         }
 
         private static Exception CheckArgument(KeePassLib.PwDatabase database, Uri filePath, KeePassLib.Security.ProtectedString password)
