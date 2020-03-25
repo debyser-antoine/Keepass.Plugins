@@ -25,7 +25,7 @@ namespace AutoExport
                 throw new ArgumentNullException("exports");
 
             _exports = new BindingList<ExportItem>();
-            foreach(ExportItem export in exports)
+            foreach(ExportItem export in exports.OrderBy(e => e.Path.ToString()))
                 _exports.Add(export);
 
             _exportsDataGridView.AutoGenerateColumns = false;
@@ -34,17 +34,35 @@ namespace AutoExport
             _lastExportTimestampColumn.DataPropertyName = "LastExportTimeStamp";
         }
 
+        public IEnumerable<ExportItem> Exports
+        {
+            get { return _exports; }
+        }
+
         private void OnNewButtonClick(object sender, EventArgs e)
         {
             CreateExport createExport = new CreateExport();
             DialogResult ret = createExport.ShowDialog();
             if (ret != DialogResult.OK)
                 return;
+
+            foreach(ExportItem export in _exports)
+            {
+                if (!Uri.Equals(export.Path, createExport.Path))
+                    continue;
+
+                MessageBox.Show(this, "An export on  [{0}], already exist (Remove it first)", "Unable to create export", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            _exports.Add(new ExportItem(null, createExport.Path, null, createExport.Password));
         }
 
         private void OnRemoveButtonClick(object sender, EventArgs e)
         {
-
+            List<ExportItem> toRemove = _exportsDataGridView.SelectedRows.Cast<DataGridViewRow>().Select(dgvr => dgvr.DataBoundItem as ExportItem).ToList();
+            foreach (ExportItem item in toRemove)
+                _exports.Remove(item);
         }
     }
 }

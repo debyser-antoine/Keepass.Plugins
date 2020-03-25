@@ -29,8 +29,8 @@ namespace AutoExport
             if (ret != DialogResult.OK)
                 return;
 
-            Uri result = new Uri(_saveFileDialog.FileName);
-            _pathTextBox.Text = result.AbsolutePath;
+            Uri result = new Uri(new Uri("file:///"), _saveFileDialog.FileName);
+            _pathTextBox.Text = result.ToString();
         }
 
         public Uri Path

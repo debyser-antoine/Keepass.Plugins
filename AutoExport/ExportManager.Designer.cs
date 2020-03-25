@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             this._rightPanel = new System.Windows.Forms.Panel();
             this._removeButton = new System.Windows.Forms.Button();
             this._newButton = new System.Windows.Forms.Button();
@@ -83,6 +83,7 @@
             this._exportsDataGridView.Name = "_exportsDataGridView";
             this._exportsDataGridView.ReadOnly = true;
             this._exportsDataGridView.RowHeadersVisible = false;
+            this._exportsDataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this._exportsDataGridView.Size = new System.Drawing.Size(650, 411);
             this._exportsDataGridView.TabIndex = 2;
             this._exportsDataGridView.VirtualMode = true;
@@ -97,8 +98,8 @@
             // 
             // _lastExportTimestampColumn
             // 
-            dataGridViewCellStyle2.Format = "o";
-            this._lastExportTimestampColumn.DefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle1.Format = "o";
+            this._lastExportTimestampColumn.DefaultCellStyle = dataGridViewCellStyle1;
             this._lastExportTimestampColumn.HeaderText = "Last Export Timestamp";
             this._lastExportTimestampColumn.Name = "_lastExportTimestampColumn";
             this._lastExportTimestampColumn.ReadOnly = true;
@@ -114,7 +115,7 @@
             this.DoubleBuffered = true;
             this.MinimumSize = new System.Drawing.Size(760, 450);
             this.Name = "ExportManager";
-            this.Text = "Auto Export Settings";
+            this.Text = "Manage Auto Exports";
             this._rightPanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._exportsDataGridView)).EndInit();
             this.ResumeLayout(false);
