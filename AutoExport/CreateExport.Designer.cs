@@ -60,6 +60,7 @@
             // 
             this._pathTextBox.Location = new System.Drawing.Point(86, 10);
             this._pathTextBox.Name = "_pathTextBox";
+            this._pathTextBox.ReadOnly = true;
             this._pathTextBox.Size = new System.Drawing.Size(655, 20);
             this._pathTextBox.TabIndex = 2;
             // 
@@ -104,7 +105,7 @@
             // 
             // _saveFileDialog
             // 
-            this._saveFileDialog.Filter = "\"Keepass databse|*kdbx\"";
+            this._saveFileDialog.Filter = "Keepass databse|*kdbx";
             this._saveFileDialog.RestoreDirectory = true;
             // 
             // CreateExport

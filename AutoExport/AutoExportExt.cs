@@ -15,8 +15,6 @@ namespace AutoExport
         private const string LastExportTimeKeyName = "AutoExport_LastExportTime";
         private const string KeePassDatabaseExtension = ".kdbx";
 
-        private readonly object _locker = new object();
-        private readonly ISet<string> _entries = new HashSet<string>();
         private readonly KeePassLib.PwUuid _groupUuid = new KeePassLib.PwUuid(new byte[]
                                                         {
                                                             0x34,
@@ -108,7 +106,7 @@ namespace AutoExport
 
                 hasNew = true;
                 KeePassLib.PwEntry newExportEntry = new KeePassLib.PwEntry(true, true);
-                newExportEntry.Strings.Set(KeePassLib.PwDefs.TitleField, new KeePassLib.Security.ProtectedString(false, Path.GetFileName(exportItem.Path.AbsolutePath)));
+                newExportEntry.Strings.Set(KeePassLib.PwDefs.TitleField, new KeePassLib.Security.ProtectedString(false, Path.GetFileName(exportItem.Path.LocalPath)));
                 newExportEntry.Strings.Set(KeePassLib.PwDefs.UrlField, new KeePassLib.Security.ProtectedString(false, exportItem.Path.ToString()));
                 newExportEntry.IconId = KeePassLib.PwIcon.Disk;
                 newExportEntry.Tags = new List<string>() { Tag };
@@ -120,7 +118,7 @@ namespace AutoExport
             {
                 _host.Database.MergeIn(_host.Database, KeePassLib.PwMergeMethod.Synchronize);
 
-                //Refresh GUI
+                //Refresh GUI (Event is launched by main UI thread)
                 _host.MainWindow.UpdateUI(false, null, true, savingGroup, true, null, true);
                 _host.MainWindow.RefreshEntriesList();
             }
@@ -177,7 +175,7 @@ namespace AutoExport
                     }
                     catch (Exception ex)
                     {
-                        KeePassLib.Utility.MessageService.ShowWarning(string.Format(CultureInfo.InvariantCulture, "Auto Export [{0}] failed:", filePath.AbsolutePath), ex);
+                        KeePassLib.Utility.MessageService.ShowWarning(string.Format(CultureInfo.InvariantCulture, "Auto Export [{0}] failed:", filePath.LocalPath), ex);
                     }
                 }
             }
@@ -229,9 +227,9 @@ namespace AutoExport
             if (ReferenceEquals(filePath, null))
                 return new ArgumentNullException("filePath");
             if (!filePath.IsFile)
-                return new ArgumentException(string.Format(CultureInfo.InvariantCulture, "Path [{0}] is not a file", filePath.AbsolutePath), "filePath");
-            if (!Path.GetExtension(filePath.AbsolutePath).Equals(KeePassDatabaseExtension, StringComparison.InvariantCultureIgnoreCase))
-                return new ArgumentException(string.Format(CultureInfo.InvariantCulture, "File [{0}] must be a KeePass database (*.{1})", filePath.AbsolutePath, KeePassDatabaseExtension), "filePath");
+                return new ArgumentException(string.Format(CultureInfo.InvariantCulture, "Path [{0}] is not a file", filePath.LocalPath), "filePath");
+            if (!Path.GetExtension(filePath.LocalPath).Equals(KeePassDatabaseExtension, StringComparison.InvariantCultureIgnoreCase))
+                return new ArgumentException(string.Format(CultureInfo.InvariantCulture, "File [{0}] must be a KeePass database (*.{1})", filePath.LocalPath, KeePassDatabaseExtension), "filePath");
             if (ReferenceEquals(password, null) || password.IsEmpty)
                 return new ArgumentNullException("password");
 
