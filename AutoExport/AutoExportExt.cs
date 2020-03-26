@@ -14,29 +14,31 @@ namespace AutoExport
         private const string Tag = "AutoExportPlugin";
         private const string LastExportTimeKeyName = "AutoExport_LastExportTime";
         private const string KeePassDatabaseExtension = ".kdbx";
+        private const int NetworkServerNotFoundErrorCode = unchecked((int) 0x80070035);
 
-        private readonly KeePassLib.PwUuid _groupUuid = new KeePassLib.PwUuid(new byte[]
-                                                        {
-                                                            0x34,
-                                                            0xA9,
-                                                            0xAA,
-                                                            0x23,
-                                                            0xD4,
-                                                            0xEC,
-                                                            0x41,
-                                                            0xAA,
-                                                            0xB8,
-                                                            0xB3,
-                                                            0xF9,
-                                                            0xFF,
-                                                            0xB8,
-                                                            0x55,
-                                                            0xD6,
-                                                            0x1B
-                                                        });
+        private static readonly KeePassLib.PwUuid _groupUuid = new KeePassLib.PwUuid(new byte[]
+                                                               {
+                                                                   0x34,
+                                                                   0xA9,
+                                                                   0xAA,
+                                                                   0x23,
+                                                                   0xD4,
+                                                                   0xEC,
+                                                                   0x41,
+                                                                   0xAA,
+                                                                   0xB8,
+                                                                   0xB3,
+                                                                   0xF9,
+                                                                   0xFF,
+                                                                   0xB8,
+                                                                   0x55,
+                                                                   0xD6,
+                                                                   0x1B
+                                                               });
 
         private KeePass.Plugins.IPluginHost _host;
-        private KeePassLib.Interfaces.IStatusLogger _logger;
+        private KeePassLib.Interfaces.IStatusLogger _windowLogger;
+        private KeePassLib.Interfaces.IStatusLogger _statusBarLogger;
 
         public override bool Initialize(KeePass.Plugins.IPluginHost host)
         {
@@ -45,7 +47,8 @@ namespace AutoExport
                 return false;
 
             _host = host;
-            _logger = _host.MainWindow.CreateShowWarningsLogger();
+            _windowLogger = _host.MainWindow.CreateShowWarningsLogger();
+            _statusBarLogger = _host.MainWindow.CreateStatusBarLogger();
             _host.MainWindow.FileSaving += OnDatabaseSaving;
 
             return true;
@@ -170,8 +173,15 @@ namespace AutoExport
                     Uri filePath = new Uri(urlValue);
                     try
                     {
-                        if (Export(fileSavingEventArgs.Database, filePath, entry.Strings.GetSafe(KeePassLib.PwDefs.PasswordField), _logger))
+                        if (Export(fileSavingEventArgs.Database, filePath, entry.Strings.GetSafe(KeePassLib.PwDefs.PasswordField), _windowLogger))
                             entry.Strings.Set(LastExportTimeKeyName, new KeePassLib.Security.ProtectedString(false, DateTime.UtcNow.ToString("o")));
+                    }
+                    catch (IOException ioex)
+                    {
+                        if (ioex.HResult == NetworkServerNotFoundErrorCode) //Network path not found
+                            _statusBarLogger.SetText(string.Format(CultureInfo.InvariantCulture, "Auto Export [{0}] failed:", filePath.LocalPath), KeePassLib.Interfaces.LogStatusType.Warning);
+                        else
+                            KeePassLib.Utility.MessageService.ShowWarning(string.Format(CultureInfo.InvariantCulture, "Auto Export [{0}] failed:", filePath.LocalPath), ioex);
                     }
                     catch (Exception ex)
                     {
@@ -184,6 +194,7 @@ namespace AutoExport
                 KeePassLib.Utility.MessageService.ShowWarning("Auto Exports failed:", e);
             }
         }
+
 
         private static bool Export(KeePassLib.PwDatabase database, Uri filePath, KeePassLib.Security.ProtectedString password, KeePassLib.Interfaces.IStatusLogger logger)
         {

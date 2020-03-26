@@ -4,7 +4,7 @@
         <KeePassDirectory>C:\Program Files (x86)\KeePass Password Safe 2</KeePassDirectory>
         <KeePassPath>$(KeePassDirectory)\KeePass.exe</KeePassPath>
         <KeePassRequiredVersion>2.44</KeePassRequiredVersion>
-        <NetFrameworkRequiredVersion>4.0</NetFrameworkRequiredVersion>
+        <NetFrameworkRequiredVersion>4.5</NetFrameworkRequiredVersion>
         <PLGXCreateCommand>&quot;$(KeePassPath)&quot; --plgx-create &quot;$(MSBuildProjectDirectory)&quot; --plgx-prereq-kp:$(KeePassRequiredVersion) --plgx-prereq-net:$(NetFrameworkRequiredVersion)</PLGXCreateCommand>
     </PropertyGroup>
     <Target Name="InfoKeePassPluginPLGX">
