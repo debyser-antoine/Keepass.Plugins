@@ -12,9 +12,24 @@ namespace AutoExport
 {
     public partial class CreateExport : Form
     {
+        private readonly KeePass.UI.PwInputControlGroup _passwordControler;
+        private Image _imgGeneratePassword;
+
         public CreateExport()
         {
             InitializeComponent();
+            _passwordControler = new KeePass.UI.PwInputControlGroup();
+            _passwordControler.Attach(_passwordSecureTextBoxEx,
+                                      _hiddenPasswordCheckBox,
+                                      _repeatLabel,
+                                      _repeatSecureTextBoxEx,
+                                      _qualityLabel,
+                                      _qualityProgressBar,
+                                      _qualityResultLabel,
+                                      _passwordToolTip,
+                                      this,
+                                      _hiddenPasswordCheckBox.Checked,
+                                      false);
         }
 
         private void OnPathButtonClick(object sender, EventArgs e)
@@ -41,6 +56,21 @@ namespace AutoExport
         public KeePassLib.Security.ProtectedString Password
         {
             get { return _passwordSecureTextBoxEx.TextEx; }
+        }
+
+        private void OnPasswordTextChanged(object sender, EventArgs e)
+        {
+            _createButton.Enabled = _passwordControler.ValidateData(false);
+        }
+
+        private void OnClosed(object sender, FormClosedEventArgs e)
+        {
+            _passwordControler.Release();
+        }
+
+        private void OnLoad(object sender, EventArgs e)
+        {
+            KeePass.UI.UIUtil.ConfigureToolTip(_passwordToolTip);
         }
     }
 }
