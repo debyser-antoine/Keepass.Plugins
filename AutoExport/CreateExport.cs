@@ -13,7 +13,6 @@ namespace AutoExport
     public partial class CreateExport : Form
     {
         private readonly KeePass.UI.PwInputControlGroup _passwordControler;
-        private Image _imgGeneratePassword;
 
         public CreateExport()
         {
